@@ -12,7 +12,30 @@ logger = logging.getLogger(__file__)
 
 
 def get_product_list(last_id, client_id, seller_token):
-    """Получить список товаров магазина озон"""
+    """Получить список товаров с Ozon.
+    
+    Args:
+        last_id (str): Идентификатор последнего значения на странице.
+        client_id (str): Идентификатор клиента Ozon
+        seller_token (str): API-ключ Ozon
+        
+    Returns:
+        dict: Словарь с данными о товарах
+        
+    Examples:
+        >>> get_product_list("", "123", "456")
+        {
+            "items": [
+                {"offer_id": "136748"}
+            ], 
+            "total": 1, 
+            "last_id": "bnVсbA=="
+        }
+        
+        >>> get_product_list("", "invalid_id", "invalid_token")
+        requests.exceptions.HTTPError: 401 Client Error: Unauthorized
+    """
+    
     url = "https://api-seller.ozon.ru/v2/product/list"
     headers = {
         "Client-Id": client_id,
@@ -32,7 +55,23 @@ def get_product_list(last_id, client_id, seller_token):
 
 
 def get_offer_ids(client_id, seller_token):
-    """Получить артикулы товаров магазина озон"""
+    """Получить все идентификаторы товаров с Ozon
+    
+    Args:
+        client_id (str): Идентификатор клиента Ozon
+        seller_token (str): API-ключ Ozon
+        
+    Returns:
+        list: Список идентификаторов всех товаров Ozon
+        
+    Examples:
+        >>> get_offer_ids("123", "456")
+        ["1", "2", "3"]
+        
+        >>> get_offer_ids("invalid_id", "invalid_token")
+        requests.exceptions.HTTPError: 401 Client Error: Unauthorized
+    """
+    
     last_id = ""
     product_list = []
     while True:
@@ -49,7 +88,42 @@ def get_offer_ids(client_id, seller_token):
 
 
 def update_price(prices: list, client_id, seller_token):
-    """Обновить цены товаров"""
+    """Обновить цены товаров на Ozon.
+
+    Args:
+        prices (list): Список словарей с данными о товарах.
+        client_id (str): Идентификатор клиента Ozon
+        seller_token (str): API-ключ Ozon
+        
+    Returns:
+        dict: Ответ от API Ozon с результатом обновления цен.
+        
+    Examples:
+        >>> prices = [
+            {
+                "auto_action_enabled": "UNKNOWN",
+                "currency_code": "RUB",
+                "offer_id": "123",
+                "old_price": "0",
+                "price": 5990,
+                }
+            ]
+        >>> update_price(prices, "123", "456")
+        {
+            "result": [
+                {
+                    "product_id": 1386,
+                    "offer_id": "123",
+                    "updated": true,
+                    "errors": [ ]
+                }
+            ]
+        }
+        
+        >>> update_price([], "123", "456")
+        requests.exceptions.HTTPError: 400 Client Error: Bad Request
+    """
+    
     url = "https://api-seller.ozon.ru/v1/product/import/prices"
     headers = {
         "Client-Id": client_id,
@@ -62,7 +136,33 @@ def update_price(prices: list, client_id, seller_token):
 
 
 def update_stocks(stocks: list, client_id, seller_token):
-    """Обновить остатки"""
+    """Обновить остатки товаров на Ozon.
+    
+    Args:
+        stocks (list): Список словарей с данными об остатках товаров.
+        client_id (str): Идентификатор клиента Ozon
+        seller_token (str): API-ключ Ozon
+        
+    Returns:
+        dict: Ответ от API Ozon с результатом обновления остатков.
+        
+    Examples:
+        >>> stocks = [{"offer_id": "123", "stock": 10}]
+        >>> update_stocks(stocks, "123", "456")
+        {
+            "result": [
+                {
+                    "offer_id": "123",
+                    "updated": true,
+                    "errors": [ ]
+                }
+            ]
+        }
+        
+        >>> update_stocks([{"offer_id": "invalid", "stock": 0}], "123", "456")
+        requests.exceptions.HTTPError: 400 Client Error: Bad Request
+    """
+    
     url = "https://api-seller.ozon.ru/v1/product/import/stocks"
     headers = {
         "Client-Id": client_id,
@@ -75,7 +175,25 @@ def update_stocks(stocks: list, client_id, seller_token):
 
 
 def download_stock():
-    """Скачать файл ostatki с сайта casio"""
+    """Скачать и обработать файл с остатками товаров с сайта Casio.
+    
+    Returns:
+        list: Список словарей с данными об остатках товаров.
+        
+    Examples:
+        >>> download_stock()
+        [
+            {
+                "Код": "123",
+                "Наименование товара": "BA-110-4A1"
+                "Цена": "16'590.00 руб."
+                "Количество": "5", 
+            }
+        ]
+        
+        >>> download_stock()
+        requests.exceptions.HTTPError: 404 Client Error: Not Found
+    """
     # Скачать остатки с сайта
     casio_url = "https://timeworld.ru/upload/files/ostatki.zip"
     session = requests.Session()
@@ -96,6 +214,46 @@ def download_stock():
 
 
 def create_stocks(watch_remnants, offer_ids):
+    """Создать список остатков товаров для обновления на Ozon.
+    
+    Args:
+        watch_remnants (list): Список словарей с данными об остатках товаров.
+        offer_ids (list): Список идентификаторов товаров, присутствующих в Ozon.
+        
+    Returns:
+        list: Список словарей с данными об остатках для Ozon.
+        
+    Examples:
+        >>> watch_remnants = [
+            {
+                "Код": "123", 
+                "Наименование товара": "BA-110-4A1"
+                "Цена": "16'590.00 руб."
+                "Количество": ">10", 
+            }
+        ]
+        >>> offer_ids = ["123", "456"]
+        >>> create_stocks(watch_remnants, offers)
+        [
+            {
+                "offer_id": "123", 
+                "stock": 100
+            }, 
+            {
+                "offer_id": "456", 
+                "stock": 0
+            }
+        ]
+        
+        >>> create_stocks([], ["123"])
+        [
+            {
+                "offer_id": "123",
+                "stock": 0
+            }
+        ]
+    """
+    
     # Уберем то, что не загружено в seller
     stocks = []
     for watch in watch_remnants:
@@ -116,6 +274,40 @@ def create_stocks(watch_remnants, offer_ids):
 
 
 def create_prices(watch_remnants, offer_ids):
+    """Создать список цен товаров для обновления на Ozon.
+    
+    Args:
+        watch_remnants (list): Список словарей с данными об остатках товаров.
+        offer_ids (list): Список идентификаторов товаров, присутствующих в Ozon.
+        
+    Returns:
+        list: Список словарей с данными о ценах товаров для API Ozon.
+        
+    Examples:
+        >>> watch_remnants = [
+            {
+                "Код": "123", 
+                "Наименование товара": "BA-110-4A1"
+                "Цена": "16'590.00 руб."
+                "Количество": ">10", 
+            }
+        ]
+        >>> offer_ids = ["123"]
+        >>> create_prices(watch_remnants, offer_ids)
+        [
+            {
+                "auto_action_enabled": "UNKNOWN",
+                "currency_code": "RUB",
+                "offer_id": "123",
+                "old_price": "0",
+                "price": "16590",
+            }
+        ]
+        
+        >>> create_prices([], ["123"])
+        []
+    """
+    
     prices = []
     for watch in watch_remnants:
         if str(watch.get("Код")) in offer_ids:
@@ -131,17 +323,72 @@ def create_prices(watch_remnants, offer_ids):
 
 
 def price_conversion(price: str) -> str:
-    """Преобразовать цену. Пример: 5'990.00 руб. -> 5990"""
+    """Преобразовать цену.
+    
+    Args:
+        price (str): Строка с ценой товара в исходном формате.
+        
+    Returns:
+        str: Преобразованная цена товара без валюты и разделителей.
+        
+    Examples:
+        >>> price_conversion("5'990.00 руб.")
+        "5990"
+        
+        >>> price_conversion("abc")
+        ""
+    """
     return re.sub("[^0-9]", "", price.split(".")[0])
 
 
 def divide(lst: list, n: int):
-    """Разделить список lst на части по n элементов"""
+    """Разделить список list на части по n элементов
+    
+    Args:
+        lst (list): Список для разделения.
+        n (int): Размер каждой части.
+        
+    Yields:
+        list: Часть списка размером n элементов.
+        
+    Examples:
+        >>> list(divide([1, 2, 3, 4, 5], 2))
+        [[1, 2], [3, 4], [5]]
+        
+        >>> list(divide([], 2))
+        []
+    """
     for i in range(0, len(lst), n):
         yield lst[i : i + n]
 
 
 async def upload_prices(watch_remnants, client_id, seller_token):
+    """Асинхронно загрузить цены товаров на Ozon.
+
+    Args:
+        watch_remnants (list): Список словарей с данными о ценах товаров.
+        client_id (str): Идентификатор клиента Ozon
+        seller_token (str): API-ключ Ozon
+        
+    Returns:
+        list: Список словарей с данными о ценах товаров для API Ozon.
+        
+    Examples:
+        >>> await upload_prices(watch_remnants, "123", "456")
+        [
+            {
+                "auto_action_enabled": "UNKNOWN",
+                "currency_code": "RUB",
+                "offer_id": "123",
+                "old_price": "0",
+                "price": "16590",
+            }
+        ]
+        
+        >>> await upload_prices([], "invalid_client", "invalid_token")
+        requests.exceptions.HTTPError: 401 Client Error: Unauthorized
+    """
+    
     offer_ids = get_offer_ids(client_id, seller_token)
     prices = create_prices(watch_remnants, offer_ids)
     for some_price in list(divide(prices, 1000)):
@@ -150,6 +397,42 @@ async def upload_prices(watch_remnants, client_id, seller_token):
 
 
 async def upload_stocks(watch_remnants, client_id, seller_token):
+    """Асинхронно загрузить остатки товаров на Ozon.
+    
+    Args:
+        watch_remnants (list): Список словарей с данными об остатках товаров.
+        client_id (str): Идентификатор клиента Ozon
+        seller_token (str): API-ключ Ozon
+        
+    Returns:
+        tuple: Кортеж с двумя списками - товары с ненулевыми остатками
+        и все товары с остатками
+        
+    Examples:
+        >>> await upload_stocks(watch_remnants, "123", "456")
+        (
+            [
+                {
+                    "offer_id": "123", 
+                    "stock": 10
+                }
+            ], 
+            [
+                {
+                    "offer_id": "123",
+                    "stock": 10
+                }, 
+                {
+                    "offer_id": "456", 
+                    "stock": 0
+                }
+            ]
+        )
+        
+        >>> await upload_stocks([], "invalid", "token")
+        requests.exceptions.HTTPError: 401 Client Error: Unauthorized
+    """
+    
     offer_ids = get_offer_ids(client_id, seller_token)
     stocks = create_stocks(watch_remnants, offer_ids)
     for some_stock in list(divide(stocks, 100)):
@@ -162,7 +445,7 @@ def main():
     env = Env()
     seller_token = env.str("SELLER_TOKEN")
     client_id = env.str("CLIENT_ID")
-    try:
+    try: 
         offer_ids = get_offer_ids(client_id, seller_token)
         watch_remnants = download_stock()
         # Обновить остатки
