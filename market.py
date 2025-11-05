@@ -11,6 +11,32 @@ logger = logging.getLogger(__file__)
 
 
 def get_product_list(page, campaign_id, access_token):
+    """Получить список товаров с Яндекс Маркета.
+    
+    Args:
+        page (str): Токен страницы для пагинации.
+        campaign_id (str): Идентификатор компании в Яндекс Маркете.
+        access_token (str): Токен для API Яндекс Маркета.
+        
+    Returns:
+        dict: Словарь с данными о товарах
+        
+    Examples:
+        >>> get_product_list("", "campaign123", "token456")
+        {
+            "offerMappingEntries": [
+                {"offer": {"shopSku": "123"}}
+            ],
+            "paging": {
+                "nextPageToken": "abc123", 
+                prevPageToken: "abc456"
+            }
+        }
+        
+        >>> get_product_list("", "invalid_campaign", "invalid_token")
+        requests.exceptions.HTTPError: 401 Client Error: Unauthorized
+    """
+    
     endpoint_url = "https://api.partner.market.yandex.ru/"
     headers = {
         "Content-Type": "application/json",
@@ -30,6 +56,37 @@ def get_product_list(page, campaign_id, access_token):
 
 
 def update_stocks(stocks, campaign_id, access_token):
+    """Обновить остатки товаров на Яндекс Маркете.
+    
+    Args:
+        stocks (list): Список словарей с данными об остатках товаров.
+        campaign_id (str): Идентификатор компании в Яндекс Маркете.
+        access_token (str): Токен для API Яндекс Маркета.
+        
+    Returns:
+        dict: Ответ от API Яндекс Маркета с результатом обновления остатков.
+        
+    Examples:
+        >>> stocks = [
+            {
+                "sku": "123", 
+                "warehouseId": "warehouse123",
+                "items": [
+                    {
+                        "count": 10, 
+                        "type": "FIT", 
+                        "updatedAt": "2025-01-01T00:00:00Z"
+                    }
+                ]
+            }
+        ]
+        >>> update_stocks(stocks, "campaign123", "token456")
+        {"status": "OK"}
+        
+        >>> update_stocks([], "campaign123", "token456")
+        requests.exceptions.HTTPError: 400 Client Error: Bad Request
+    """
+    
     endpoint_url = "https://api.partner.market.yandex.ru/"
     headers = {
         "Content-Type": "application/json",
@@ -46,6 +103,33 @@ def update_stocks(stocks, campaign_id, access_token):
 
 
 def update_price(prices, campaign_id, access_token):
+    """Обновить цены товаров на Яндекс Маркете.
+    
+    Args:
+        prices (list): Список словарей с данными о ценах товаров.
+        campaign_id (str): Идентификатор компании в Яндекс Маркете.
+        access_token (str): Токен для API Яндекс Маркета.
+        
+    Returns:
+        dict: Ответ от API Яндекс Маркета с результатом обновления цен.
+        
+    Examples:
+        >>> prices =  [
+            {
+                "id": "123",
+                "price": {
+                    "value": 16590, 
+                    "currencyId": "RUR"
+                }
+            }
+        ]
+        >>> update_price(prices, "campaign123", "token456")
+        {"status": "OK"}
+        
+        >>> update_price([{"id": "invalid"}], "campaign123", "token456")
+        requests.exceptions.HTTPError: 400 Client Error: Bad Request
+    """
+    
     endpoint_url = "https://api.partner.market.yandex.ru/"
     headers = {
         "Content-Type": "application/json",
@@ -62,7 +146,23 @@ def update_price(prices, campaign_id, access_token):
 
 
 def get_offer_ids(campaign_id, market_token):
-    """Получить артикулы товаров Яндекс маркета"""
+    """Получить артикулы товаров Яндекс Маркета.
+    
+    Args:
+        campaign_id (str): Идентификатор компании в Яндекс Маркете.
+        market_token (str): Токен для API Яндекс Маркета.
+        
+    Returns:
+        list: Список артикулов всех товаров компании.
+        
+    Examples:
+        >>> get_offer_ids("campaign123", "token456")
+        ["123", "456"]
+        
+        >>> get_offer_ids("invalid_campaign", "invalid_token")
+        requests.exceptions.HTTPError: 401 Client Error: Unauthorized
+    """
+    
     page = ""
     product_list = []
     while True:
@@ -78,6 +178,68 @@ def get_offer_ids(campaign_id, market_token):
 
 
 def create_stocks(watch_remnants, offer_ids, warehouse_id):
+    """Создать список остатков товаров для обновления на Яндекс Маркете.
+    
+    Args:
+        watch_remnants (list): Список словарей с данными об остатках товаров.
+        offer_ids (list): Список артикулов товаров c Яндекс Маркета.
+        warehouse_id (str): Идентификатор склада в Яндекс Маркете.
+        
+    Returns:
+        list: Список словарей с данными об остатках для Яндекс Маркета.
+        
+    Examples:
+        >>> watch_remnants = [
+            {
+                "Код": "123", 
+                "Наименование товара": "BA-110-4A1"
+                "Цена": "16'590.00 руб."
+                "Количество": ">10", 
+            }
+        ]
+        >>> offer_ids = ["123", "456"]
+        >>> create_stocks(watch_remnants, offer_ids, "warehouse123")
+        [
+            {
+                "sku": "123",
+                "warehouseId": "warehouse123",
+                "items": [
+                    {
+                        "count": 100, 
+                        "type": "FIT", 
+                        "updatedAt": "2025-01-01T00:00:00Z"
+                    }
+                ]
+            },
+            {
+                "sku": "456", 
+                "warehouseId": "warehouse123",
+                "items": [
+                    {
+                        "count": 0, 
+                        "type": "FIT", 
+                        "updatedAt": "2025-01-01T00:00:00Z"
+                    }
+                ]
+            }
+        ]
+        
+        >>> create_stocks([], ["123"], "warehouse123")
+        [
+            {
+                "sku": "123",
+                "warehouseId": "warehouse123", 
+                "items": [
+                    {
+                        "count": 0, 
+                        "type": "FIT", 
+                        "updatedAt": "2025-01-01T00:00:00Z"
+                    }
+                ]
+            }
+        ]
+    """
+    
     # Уберем то, что не загружено в market
     stocks = list()
     date = str(datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z")
@@ -123,6 +285,40 @@ def create_stocks(watch_remnants, offer_ids, warehouse_id):
 
 
 def create_prices(watch_remnants, offer_ids):
+    """Создать список цен товаров для обновления на Яндекс Маркете.
+    
+    Args:
+        watch_remnants (list): Список словарей с данными о ценах товаров.
+        offer_ids (list): Список артикулов товаров с Яндекс Маркета.
+        
+    Returns:
+        list: Список словарей с данными о ценах для API Яндекс Маркета.
+        
+    Examples:
+        >>> watch_remnants = [
+            {
+                "Код": "123",
+                "Наименование товара": "BA-110-4A1"
+                "Цена": "16'590.00 руб."
+                "Количество": "5", 
+            }
+        ]
+        >>> offer_ids = ["123"]
+        >>> create_prices(watch_remnants, offer_ids)
+        [
+            {
+                "id": "123",
+                "price": {
+                    "value": 16590, 
+                    "currencyId": "RUR"
+                }
+            }
+        ]
+        
+        >>> create_prices([], ["123"])
+        []
+    """
+    
     prices = []
     for watch in watch_remnants:
         if str(watch.get("Код")) in offer_ids:
@@ -143,6 +339,31 @@ def create_prices(watch_remnants, offer_ids):
 
 
 async def upload_prices(watch_remnants, campaign_id, market_token):
+    """Асинхронно загрузить цены товаров на Яндекс Маркет.
+    
+    Args:
+        watch_remnants (list): Список словарей с данными о ценах товаров.
+        campaign_id (str): Идентификатор компании в Яндекс Маркете.
+        market_token (str): Токен для API Яндекс Маркета.
+        
+    Returns:
+        list: Список всех созданных цен для загрузки.
+        
+    Examples:
+        >>> await upload_prices(watch_remnants, "campaign123", "token456")
+        [
+            {
+                "id": "123",
+                "price": {
+                    "value": 16590, 
+                    "currencyId": "RUR"
+                }
+            }
+        ]
+        
+        >>> await upload_prices([], "invalid_campaign", "token456")
+        requests.exceptions.HTTPError: 401 Client Error: Unauthorized
+    """
     offer_ids = get_offer_ids(campaign_id, market_token)
     prices = create_prices(watch_remnants, offer_ids)
     for some_prices in list(divide(prices, 500)):
@@ -151,6 +372,65 @@ async def upload_prices(watch_remnants, campaign_id, market_token):
 
 
 async def upload_stocks(watch_remnants, campaign_id, market_token, warehouse_id):
+    """Асинхронно загрузить остатки товаров на Яндекс Маркет.
+    
+    Args:
+        watch_remnants (list): Список словарей с данными об остатках товаров.
+        campaign_id (str): Идентификатор компании в Яндекс Маркете.
+        market_token (str): Токен для API Яндекс Маркета.
+        warehouse_id (str): Идентификатор склада в Яндекс Маркете.
+        
+    Returns:
+        tuple: Кортеж с двумя списками:
+            - list: Товары с ненулевыми остатками
+            - list: Все товары с остатками
+            
+    Examples:
+        >>> await upload_stocks(watch_remnants, "campaign123", "token456", "warehouse123")
+        (
+            [
+                {
+                    "sku": "123",
+                    "warehouseId": "warehouse123",
+                    "items": [
+                        {
+                            "count": 100, 
+                            "type": "FIT", 
+                            "updatedAt": "2025-01-01T00:00:00Z"
+                        }
+                    ]
+                }
+            ],
+            [
+                {
+                    "sku": "123",
+                    "warehouseId": "warehouse123",
+                    "items": [
+                        {
+                            "count": 100, 
+                            "type": "FIT", 
+                            "updatedAt": "2025-01-01T00:00:00Z"
+                        }
+                    ]
+                },
+                {
+                    "sku": "456", 
+                    "warehouseId": "warehouse123",
+                    "items": [
+                        {
+                            "count": 0, 
+                            "type": "FIT", 
+                            "updatedAt": "2025-01-01T00:00:00Z"
+                        }
+                    ]
+                }
+            ]
+        )
+        
+        >>> await upload_stocks([], "invalid", "token", "warehouse")
+        requests.exceptions.HTTPError: 401 Client Error: Unauthorized
+    """
+    
     offer_ids = get_offer_ids(campaign_id, market_token)
     stocks = create_stocks(watch_remnants, offer_ids, warehouse_id)
     for some_stock in list(divide(stocks, 2000)):

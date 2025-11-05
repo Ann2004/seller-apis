@@ -405,8 +405,9 @@ async def upload_stocks(watch_remnants, client_id, seller_token):
         seller_token (str): API-ключ Ozon
         
     Returns:
-        tuple: Кортеж с двумя списками - товары с ненулевыми остатками
-        и все товары с остатками
+        tuple: Кортеж с двумя списками:
+            - list: Товары с ненулевыми остатками
+            - list: Все товары с остатками
         
     Examples:
         >>> await upload_stocks(watch_remnants, "123", "456")
